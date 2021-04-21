@@ -30,6 +30,11 @@ const EXPECTED_CHARACTER_FREQUENCY = {
 	'z': 0.00074,
 }
 
+BIT_SET_TABLE = Buffer.alloc(256)
+for (let i = 0; i < 256; i++) {
+  BIT_SET_TABLE[i] = (i & 1) + BIT_SET_TABLE[Math.floor(i / 2)]
+}
+
 function xorTwoStrings (hexString1, hexString2) {
   if (hexString1.length !== hexString2.length) {
     throw new Error('both strings must be of equal length')
@@ -124,10 +129,60 @@ async function detectSingleCharacterXor(fileName) {
   return mostLikelyLine
 }
 
+function repeatingKeyXorEncrypt (input, key) {
+  const plainTextBuffer = Buffer.from(input)
+  const keyBuffer = Buffer.from(key)
+  const encryptedBuffer = Buffer.alloc(plainTextBuffer.length)
+
+  for (let i = 0; i < plainTextBuffer.length; i++) {
+    encryptedBuffer[i] = plainTextBuffer[i] ^ keyBuffer[i % keyBuffer.length]
+  }
+  return encryptedBuffer.toString('hex')
+}
+
+function editDistance(buffer1, buffer2) {
+  let numberOfDifferentBytes = 0
+  for (let i = 0; i < buffer1.length; i++) {
+    const xorOfBytes = buffer1[i] ^ buffer2[i]
+    numberOfDifferentBytes += BIT_SET_TABLE[xorOfBytes]
+  }
+  return numberOfDifferentBytes
+}
+
+function findKeySize(buffer) {
+
+  let bestDistance = Number.MAX_SAFE_INTEGER
+  let bestKeySize = 0
+
+  for (let keySize = 2; keySize < 20; keySize++) {
+    if (keySize * 4 > buffer.length) {
+      break
+    }
+
+    const block1 = buffer.slice(0, keySize)
+    const block2 = buffer.slice(keySize, keySize * 2)
+    const block3 = buffer.slice(keySize * 2, keySize * 3)
+    const block4 = buffer.slice(keySize * 3, keySize * 4)
+    const distance1 = editDistance(block1, block2)
+    const distance2 = editDistance(block2, block3)
+    const distance3 = editDistance(block3, block4)
+    const average = (distance1 + distance2 + distance3) / 3
+    const normalisedDistance = average / keySize
+    if ( normalisedDistance < bestDistance) {
+      bestDistance = normalisedDistance
+      bestKeySize = keySize
+    }
+  }
+  return bestKeySize
+}
+
 module.exports = {
   xorTwoStrings,
   singleByteCipherXorEncrypt,
   singleByteCipherXorDecrypt,
   crackSingleByteXorCipher,
-  detectSingleCharacterXor
+  detectSingleCharacterXor,
+  repeatingKeyXorEncrypt,
+  editDistance,
+  findKeySize
 }
