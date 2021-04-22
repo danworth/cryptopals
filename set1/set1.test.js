@@ -1,8 +1,8 @@
 const {
   xorTwoStrings,
-  singleByteCipherXorEncrypt,
-  singleByteCipherXorDecrypt,
-  crackSingleByteXorCipher,
+  singleByteXorEncrypt,
+  singleByteXorDecrypt,
+  crackSingleByteXor,
   detectSingleCharacterXor,
   repeatingKeyXorEncrypt,
   editDistance,
@@ -30,34 +30,34 @@ test('xor should throw exception if strings differ in length', () => {
   }).toThrow()
 })
 
-test('single byte xor cipher encrypt should work', () => {
+test('single byte xor encrypt should work', () => {
   const plainText = 'hello world'
-  const cipher = 'A'.codePointAt(0)
-  expect(singleByteCipherXorEncrypt(plainText, cipher)).toBe('29242d2d2e61362e332d25')
+  const key = 'A'.codePointAt(0)
+  expect(singleByteXorEncrypt(plainText, key)).toBe('29242d2d2e61362e332d25')
 })
 
-test('single-byte XOR cipher decrypt should work', () => {
+test('single-byte XOR decrypt should work', () => {
   const encryptedHex = '29242d2d2e61362e332d25'
-  const cipher = 'A'.codePointAt(0)
-  expect(singleByteCipherXorDecrypt(encryptedHex, cipher)).toBe('hello world')
+  const key = 'A'.codePointAt(0)
+  expect(singleByteXorDecrypt(encryptedHex, key)).toBe('hello world')
 })
 
-test('Challenge 3: single-byte XOR cipher', () => {
+test('Challenge 3: single-byte XOR', () => {
   const inputHex = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'
-  expect(crackSingleByteXorCipher(inputHex).solution).toBe("Cooking MC's like a pound of bacon")
+  expect(crackSingleByteXor(inputHex).solution).toBe("Cooking MC's like a pound of bacon")
 })
 
 test('Challenge 4: detect single-character XOR', async () => {
   const result = await detectSingleCharacterXor('/Users/danworth/learning/crypto/set1/challenge4_input.txt')
-  expect(result.solution).toBe("Now that the party is jumping\n")
+  expect(result.solution).toBe('Now that the party is jumping\n')
 })
 
 test('Challenge 5: implement repeating key xor encryption', () => {
-  const inputText = 
+  const inputText =
 `Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal`
 
-  const expectedEncryptedValue = `0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f`
+  const expectedEncryptedValue = '0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f'
   expect(repeatingKeyXorEncrypt(inputText, 'ICE')).toBe(expectedEncryptedValue)
 })
 
@@ -67,14 +67,10 @@ test('Challenge 6: find the correct edit distance', () => {
   expect(editDistance(Buffer.from(string1), Buffer.from(string2))).toBe(37)
 })
 
-test('Challenge 6: find the key size', () => {
-  const encodedString = `0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f`
-  const expectedKeyLength = 3
-  expect(findKeySize(Buffer.from(encodedString, 'hex'))).toBe(expectedKeyLength)
-})
-
-test.only('Challenge 6: find the key size 4', () => {
-  const key = "ABCD"
-  const encodedString = repeatingKeyXorEncrypt('hello everyone does this work?', 'ABCD')
-  expect(findKeySize(Buffer.from(encodedString, 'hex'))).toBe(key.length)
+test('Challenge 6: find the key size 10', () => {
+  const key = 'ABCDEFGHIJ'
+  const plainText =
+  'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using \'Content here, content here\', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for \'lorem ipsum\' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).'
+  const encodedString = repeatingKeyXorEncrypt(plainText, key)
+  expect(findKeySize(Buffer.from(encodedString, 'hex'))[0].keySize).toBe(key.length)
 })

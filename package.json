@@ -16,6 +16,7 @@
     "save-dev": "0.0.1-security"
   },
   "devDependencies": {
+    "nodeplotlib": "^0.7.3",
     "standard": "^16.0.3"
   }
 }
