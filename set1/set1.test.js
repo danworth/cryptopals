@@ -6,7 +6,8 @@ const {
   detectSingleCharacterXor,
   repeatingKeyXorEncrypt,
   editDistance,
-  findKeySize
+  findKeySize,
+  breakRepeatingXor
 } = require('./xor.js')
 
 const { toBase64 } = require('./hexFunctions')
@@ -73,4 +74,12 @@ test('Challenge 6: find the key size 10', () => {
   'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using \'Content here, content here\', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for \'lorem ipsum\' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).'
   const encodedString = repeatingKeyXorEncrypt(plainText, key)
   expect(findKeySize(Buffer.from(encodedString, 'hex'))[0].keySize).toBe(key.length)
+})
+
+test('Challenge 6: break repeating xor', () => {
+  const key = 'ABCDEFGHIJ'
+  const plainText =
+  'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using \'Content here, content here\', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for \'lorem ipsum\' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).'
+  const encodedString = repeatingKeyXorEncrypt(plainText, key)
+  expect(breakRepeatingXor(encodedString)).toBe(key)
 })

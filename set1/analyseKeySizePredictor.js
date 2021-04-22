@@ -24,7 +24,7 @@ for (let keySize = 2; keySize < 40; keySize++) {
   const encryptedInput = repeatingKeyXorEncrypt(plainText, key)
   const predictedKeySizes = findKeySize(Buffer.from(encryptedInput, 'hex'))
   const indexOfActualKeySize = predictedKeySizes.findIndex((result) => {
-    if (result.keySize === keySize) {
+    if (result.keySize % keySize === 0) {
       return true
     }
     return false
@@ -36,12 +36,12 @@ for (let keySize = 2; keySize < 40; keySize++) {
 const results = {
   x: keySizes,
   y: actualPositions,
-  type: 'scatter',
+  type: 'scatter'
 }
 
 const layout = {
-  yaxis: {title: 'Position of actual key size within predicted key sizes'},
-  xaxis: {title: 'Actual key size'}
+  yaxis: { title: 'First position where "predicted keysize % keysize = 0"' },
+  xaxis: { title: 'Actual key size' }
 }
 
 plot([results], layout)
