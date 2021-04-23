@@ -92,29 +92,25 @@ function englishness (sentence) {
 }
 
 function crackSingleByteXor (hexString) {
-  const bestSolution = {
-    score: 0,
-    solution: '',
-    key: ''
-  }
 
+  let bestSolution
   for (let i = 0; i < 255; i++) {
-    const decryptedResult = singleByteXorDecrypt(hexString, i)
-    const decryptedResultScore = englishness(decryptedResult)
-    if (decryptedResultScore > bestSolution.score) {
-      bestSolution.score = decryptedResultScore
-      bestSolution.solution = decryptedResult
-      bestSolution.key = String.fromCharCode(i)
+    const decryptedText = singleByteXorDecrypt(hexString, i)
+    const decryptedTextEnglishness = englishness(decryptedText)
+    if (!bestSolution || decryptedTextEnglishness > bestSolution.englishness) {
+      bestSolution = {
+        englishness: decryptedTextEnglishness,
+        decryptedText: decryptedText,
+        key: String.fromCharCode(i)
+      }
     }
   }
   return bestSolution
 }
 
-async function detectSingleCharacterXor (fileName) {
-  let mostLikelyLine = {
-    score: 0,
-    solution: ''
-  }
+async function findSingleCharacterXorLine (fileName) {
+  let bestEnglishScore = 0
+  let bestDecryptedLine
 
   const readFile = readline.createInterface({
     input: fs.createReadStream(fileName),
@@ -122,24 +118,33 @@ async function detectSingleCharacterXor (fileName) {
   })
 
   for await (const line of readFile) {
-    const bestAttemptAtDecrypt = crackSingleByteXor(line)
-    if (bestAttemptAtDecrypt.score > mostLikelyLine.score) {
-      mostLikelyLine = bestAttemptAtDecrypt
+    const decryptedResult = crackSingleByteXor(line)
+    if (decryptedResult.englishness > bestEnglishScore) {
+      bestDecryptedLine = decryptedResult.decryptedText
+      bestEnglishScore = decryptedResult.englishness
     }
   }
 
-  return mostLikelyLine
+  return bestDecryptedLine
 }
 
-function repeatingKeyXorEncrypt (input, key) {
-  const plainTextBuffer = Buffer.from(input)
-  const keyBuffer = Buffer.from(key)
-  const encryptedBuffer = Buffer.alloc(plainTextBuffer.length)
+function xorBuffer(inputBuffer, keyString) {
+  const keyBuffer = Buffer.from(keyString)
+  const xorBuffer = Buffer.alloc(inputBuffer.length)
 
-  for (let i = 0; i < plainTextBuffer.length; i++) {
-    encryptedBuffer[i] = plainTextBuffer[i] ^ keyBuffer[i % keyBuffer.length]
+  for (let i = 0; i < inputBuffer.length; i++) {
+    xorBuffer[i] = inputBuffer[i] ^ keyBuffer[i % keyBuffer.length]
   }
-  return encryptedBuffer.toString('hex')
+  return xorBuffer
+}
+
+function repeatingKeyXorEncrypt (inputString, keyString) {
+  const inputBuffer = Buffer.from(inputString)
+  return xorBuffer(inputBuffer, keyString).toString('hex')
+}
+
+function repeatingKeyXorDecrypt (inputBuffer, keyString) {
+  return xorBuffer(inputBuffer, keyString).toString()
 }
 
 function editDistance (buffer1, buffer2) {
@@ -151,7 +156,7 @@ function editDistance (buffer1, buffer2) {
   return numberOfDifferentBytes
 }
 
-function findKeySize (buffer, limit = 10) {
+function findKeySize (buffer, resultLimit = 10) {
   const results = []
 
   for (let keySize = 2; keySize < 40; keySize++) {
@@ -176,28 +181,41 @@ function findKeySize (buffer, limit = 10) {
     }
     return 1
   })
-  return sortedResults.slice(0, limit)
+  return sortedResults.slice(0, resultLimit).map(x => x.keySize)
 }
 
-function breakRepeatingXor (hexString) {
-  const buffer = Buffer.from(hexString, 'hex')
-  const predictedKeySize = findKeySize(buffer, 1)[0].keySize
-  const blocks = []
-  for (let i = 0; i < predictedKeySize; i++) {
-    blocks.push([])
-  }
+function breakRepeatingXor (encodedString, encoding = 'hex') {
+  const buffer = Buffer.from(encodedString, encoding)
+  const predictedKeySizes = findKeySize(buffer, 3)
+  let bestEnglishScore = 0
+  let bestDecryptedText
 
-  for (let i = 0; i < buffer.length; i++) {
-    blocks[i % predictedKeySize].push(buffer[i])
-  }
+  for (const keySize of predictedKeySizes) {
+    const blocks = []
+    for (let i = 0; i < keySize; i++) {
+      blocks.push([])
+    }
 
-  const predictedKey = []
-  for (const block of blocks) {
-    const decryptedBlock = crackSingleByteXor(Buffer.from(block).toString('hex'))
-    predictedKey.push(decryptedBlock.key)
-  }
+    for (let i = 0; i < buffer.length; i++) {
+      blocks[i % keySize].push(buffer[i])
+    }
 
-  return predictedKey.toString().replace(/,/g, '')
+    const predictedKey = []
+    for (const block of blocks) {
+      const decryptAttempt = crackSingleByteXor(Buffer.from(block).toString('hex'))
+      predictedKey.push(decryptAttempt.key)
+    }
+
+    const predictedKeyText = predictedKey.toString().replace(/,/g, '')
+    const decryptedText = repeatingKeyXorDecrypt(buffer, predictedKeyText)
+    const englishScore = englishness(decryptedText)
+
+    if (englishScore > bestEnglishScore) {
+      bestDecryptedText = decryptedText
+      bestEnglishScore = englishScore
+    }
+  }
+  return bestDecryptedText
 }
 
 module.exports = {
@@ -205,9 +223,9 @@ module.exports = {
   singleByteXorEncrypt,
   singleByteXorDecrypt,
   crackSingleByteXor,
-  detectSingleCharacterXor,
+  findSingleCharacterXorLine,
   repeatingKeyXorEncrypt,
   editDistance,
-  findKeySize,
-  breakRepeatingXor
+  breakRepeatingXor,
+  repeatingKeyXorDecrypt
 }
