@@ -11,7 +11,7 @@ const {
   repeatingKeyXorDecrypt,
   editDistance,
   breakRepeatingXor
-} = require('./xor.js')
+} = require('./xor_utils.js')
 
 const { toBase64 } = require('./hexFunctions')
 
@@ -52,7 +52,8 @@ test('Challenge 3: single-byte XOR', () => {
 })
 
 test('Challenge 4: detect single-character XOR', async () => {
-  const result = await findSingleCharacterXorLine('/Users/danworth/learning/crypto/set1/challenge4_input.txt')
+  const filePath = path.join(__dirname, 'challenge4_input.txt')
+  const result = await findSingleCharacterXorLine(filePath)
   expect(result).toBe('Now that the party is jumping\n')
 })
 
