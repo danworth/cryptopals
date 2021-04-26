@@ -92,7 +92,6 @@ function englishness (sentence) {
 }
 
 function crackSingleByteXor (hexString) {
-
   let bestSolution
   for (let i = 0; i < 255; i++) {
     const decryptedText = singleByteXorDecrypt(hexString, i)
@@ -128,7 +127,7 @@ async function findSingleCharacterXorLine (fileName) {
   return bestDecryptedLine
 }
 
-function xorBuffer(inputBuffer, keyString) {
+function xorBuffer (inputBuffer, keyString) {
   const keyBuffer = Buffer.from(keyString)
   const xorBuffer = Buffer.alloc(inputBuffer.length)
 

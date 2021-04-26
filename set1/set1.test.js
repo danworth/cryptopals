@@ -13,6 +13,8 @@ const {
   breakRepeatingXor
 } = require('./xor_utils.js')
 
+const { decryptAes128Ecb } = require('./aes_utils')
+
 const { toBase64 } = require('./hexFunctions')
 
 test('Challenge 1: Convert hex to base64', () => {
@@ -96,4 +98,11 @@ test('Challenge 6: decrypt file', async () => {
   const data = await fs.readFile(encryptedFilePath, 'utf-8')
   const decryptedText = breakRepeatingXor(data.toString(), 'base64')
   expect(decryptedText.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
+})
+
+test('Challenge 7: decrypt aes 128-ecb', async () => {
+  const encryptedFilePath = path.join(__dirname, 'challenge7_input.txt')
+  const data = await fs.readFile(encryptedFilePath, 'utf-8')
+  const decrypted = await decryptAes128Ecb(data, 'YELLOW SUBMARINE')
+  expect(decrypted.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
 })
