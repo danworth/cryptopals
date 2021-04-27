@@ -21,7 +21,7 @@ const {
   detectAesEcb
 } = require('./aes_utils')
 
-const { toBase64 } = require('./hexFunctions')
+const { toBase64 } = require('./hex_utils.js')
 
 test('Challenge 1: Convert hex to base64', () => {
   const hexString = '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d'
@@ -60,7 +60,7 @@ test('Challenge 3: single-byte XOR', () => {
 })
 
 test('Challenge 4: detect single-character XOR', async () => {
-  const filePath = path.join(__dirname, 'challenge4_input.txt')
+  const filePath = path.join(__dirname, 'resources/challenge4_input.txt')
   const result = await findSingleCharacterXorLine(filePath)
   expect(result).toBe('Now that the party is jumping\n')
 })
@@ -100,27 +100,27 @@ test('Challenge 6: break repeating xor', () => {
 })
 
 test('Challenge 6: decrypt file', async () => {
-  const encryptedFilePath = path.join(__dirname, 'challenge6_input.txt')
+  const encryptedFilePath = path.join(__dirname, 'resources/challenge6_input.txt')
   const data = await fsPromises.readFile(encryptedFilePath, 'utf-8')
   const decryptedText = breakRepeatingXor(data.toString(), 'base64')
   expect(decryptedText.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
 })
 
 test('Challenge 7: decrypt aes 128-ecb', async () => {
-  const encryptedFilePath = path.join(__dirname, 'challenge7_input.txt')
+  const encryptedFilePath = path.join(__dirname, 'resources/challenge7_input.txt')
   const data = await fsPromises.readFile(encryptedFilePath, 'utf-8')
   const decrypted = await decryptAes128Ecb(data, 'YELLOW SUBMARINE')
   expect(decrypted.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
 })
 
 test.skip('Challenge 7: decrypt aes 128-ecb with streams', async () => {
-  const encryptedFilePath = path.join(__dirname, 'challenge7_input.txt')
+  const encryptedFilePath = path.join(__dirname, 'resources/challenge7_input.txt')
   const decrypted = await decryptAes128EcbPipedStreams(encryptedFilePath, 'YELLOW SUBMARINE')
   expect(decrypted.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
 })
 
 test('Challenge 8: detect aes ecb encrypted line', async () => {
-  const encryptedFilePath = path.join(__dirname, 'challenge8_input.txt')
+  const encryptedFilePath = path.join(__dirname, 'resources/challenge8_input.txt')
   const encryptedFile = readline.createInterface({
     input: fs.createReadStream(encryptedFilePath),
     console: false
