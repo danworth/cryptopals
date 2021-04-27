@@ -16,7 +16,7 @@ async function decryptAes128Ecb (encryptedString, key, encoding = 'base64') {
 async function decryptAes128EcbPipedStreams (filePath, key, encoding = 'base64') {
   const encryptedStream = createReadStream(filePath, { encoding })
   const decryptedStream = new Writable()
-  
+
   const algorithm = 'aes-128-ecb'
   const initVector = null // ECB doesn't use an init vector
   const keyBuffer = Buffer.from(key)
@@ -34,7 +34,7 @@ async function decryptAes128EcbPipedStreams (filePath, key, encoding = 'base64')
   return Buffer.from(decryptedArray).toString()
 }
 
-function detectAesEcb(buffer) {
+function detectAesEcb (buffer) {
   const frequencyOfBlockValues = {}
   const blockLength = 16
   for (let i = 0; i + blockLength < buffer.length; i += blockLength) {
