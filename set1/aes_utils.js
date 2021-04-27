@@ -34,7 +34,26 @@ async function decryptAes128EcbPipedStreams (filePath, key, encoding = 'base64')
   return Buffer.from(decryptedArray).toString()
 }
 
+function detectAesEcb(buffer) {
+  const frequencyOfBlockValues = {}
+  const blockLength = 16
+  for (let i = 0; i + blockLength < buffer.length; i += blockLength) {
+    const blockHex = buffer.slice(i, i + blockLength).toString('hex')
+    if (blockHex in frequencyOfBlockValues) {
+      frequencyOfBlockValues[blockHex] += 1
+    } else {
+      frequencyOfBlockValues[blockHex] = 1
+    }
+  }
+  for (const frequency of Object.values(frequencyOfBlockValues)) {
+    if (frequency > 1) {
+      return buffer.toString('hex')
+    }
+  }
+}
+
 module.exports = {
   decryptAes128Ecb,
-  decryptAes128EcbPipedStreams
+  decryptAes128EcbPipedStreams,
+  detectAesEcb
 }
