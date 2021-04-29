@@ -17,6 +17,7 @@ const {
 
 const {
   decryptAes128Ecb,
+  decryptAes128EcbStreamed,
   detectAesEcb
 } = require('./aes_utils')
 
@@ -109,6 +110,12 @@ test('Challenge 7: decrypt aes 128-ecb', async () => {
   const encryptedFilePath = path.join(__dirname, 'resources/challenge7_input.txt')
   const data = await fsPromises.readFile(encryptedFilePath, 'utf-8')
   const decrypted = await decryptAes128Ecb(data, 'YELLOW SUBMARINE')
+  expect(decrypted.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
+})
+
+test('Challenge 7: decrypt aes 128-ecb with streams', async () => {
+  const encryptedFilePath = path.join(__dirname, 'resources/challenge7_input.txt')
+  const decrypted = await decryptAes128EcbStreamed(encryptedFilePath, 'YELLOW SUBMARINE')
   expect(decrypted.split('\n')[0]).toBe("I'm back and I'm ringin' the bell ")
 })
 

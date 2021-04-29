@@ -1,4 +1,6 @@
 const { createDecipheriv } = require('crypto')
+const { Transform } = require('stream')
+const { createReadStream } = require('fs')
 
 async function decryptAes128Ecb (encryptedString, key, encoding = 'base64') {
   const algorithm = 'aes-128-ecb'
@@ -9,6 +11,33 @@ async function decryptAes128Ecb (encryptedString, key, encoding = 'base64') {
   const decryptedBuffer = decipher.update(encryptedString, encoding)
   const finalBuffer = decipher.final()
   return Buffer.concat([decryptedBuffer, finalBuffer]).toString()
+}
+
+function decoder(encoding) {
+  return new Transform({
+      objectMode: true,
+      transform: (data, _, done) => {
+        const encoded = Buffer.from(data, encoding)
+        done(null, encoded)
+      }
+    })
+}
+
+async function decryptAes128EcbStreamed(filePath, key, encoding = 'base64') {
+    const algorithm = 'aes-128-ecb'
+    const initVector = null // ECB doesn't use an init vector
+    const keyBuffer = Buffer.from(key)
+    const decipher = createDecipheriv(algorithm, keyBuffer, initVector)
+
+    createReadStream(filePath, {encoding: 'utf-8'})
+    .pipe(decoder(encoding))
+    .pipe(decipher)
+
+    const results = []
+    for await(const decryptedChunk of decipher) {
+      results.push(decryptedChunk)
+    }
+    return results.toString()
 }
 
 function detectAesEcb (buffer) {
@@ -29,7 +58,9 @@ function detectAesEcb (buffer) {
   }
 }
 
+
 module.exports = {
   decryptAes128Ecb,
+  decryptAes128EcbStreamed,
   detectAesEcb
 }
