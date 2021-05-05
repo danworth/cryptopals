@@ -1,8 +1,7 @@
-function pad (text, blockLength) {
-  const textBuffer = Buffer.from(text)
+function pad (textBuffer, blockLength) {
   const difference = blockLength - textBuffer.length
   const padding = Buffer.alloc(difference).fill(difference)
-  return Buffer.concat([textBuffer, padding]).toString()
+  return Buffer.concat([textBuffer, padding])
 }
 
 module.exports = {

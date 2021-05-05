@@ -35,6 +35,18 @@ for (let i = 0; i < 256; i++) {
   BIT_SET_TABLE[i] = (i & 1) + BIT_SET_TABLE[Math.floor(i / 2)]
 }
 
+function xorTwoBuffers( buffer1, buffer2 ) {
+  if (buffer1.length !== buffer2.length) {
+    throw new Error ('both buffers must be of equal length')
+  }
+  const numberOfBytes = buffer1.length
+  const resultBuffer = Buffer.alloc(numberOfBytes)
+  for (let i = 0; i < numberOfBytes; i++) {
+    resultBuffer[i] = buffer1[i] ^ buffer2[i]
+  }
+  return resultBuffer
+}
+
 function xorTwoStrings (hexString1, hexString2) {
   if (hexString1.length !== hexString2.length) {
     throw new Error('both strings must be of equal length')
@@ -42,13 +54,7 @@ function xorTwoStrings (hexString1, hexString2) {
 
   const bufferOne = Buffer.from(hexString1, 'hex')
   const bufferTwo = Buffer.from(hexString2, 'hex')
-
-  const numberOfBytes = bufferOne.length
-  const resultBuffer = Buffer.alloc(numberOfBytes)
-  for (let i = 0; i < numberOfBytes; i++) {
-    resultBuffer[i] = bufferOne[i] ^ bufferTwo[i]
-  }
-  return resultBuffer.toString('hex')
+  return xorTwoBuffers(bufferOne, bufferTwo).toString('hex')
 }
 
 function singleByteXorEncrypt (plainText, key) {
@@ -219,6 +225,7 @@ function breakRepeatingXor (encodedString, encoding = 'hex') {
 
 module.exports = {
   xorTwoStrings,
+  xorTwoBuffers,
   singleByteXorEncrypt,
   singleByteXorDecrypt,
   crackSingleByteXor,
