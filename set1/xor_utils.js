@@ -35,9 +35,9 @@ for (let i = 0; i < 256; i++) {
   BIT_SET_TABLE[i] = (i & 1) + BIT_SET_TABLE[Math.floor(i / 2)]
 }
 
-function xorTwoBuffers( buffer1, buffer2 ) {
+function xorTwoBuffers (buffer1, buffer2) {
   if (buffer1.length !== buffer2.length) {
-    throw new Error ('both buffers must be of equal length')
+    throw new Error('both buffers must be of equal length')
   }
   const numberOfBytes = buffer1.length
   const resultBuffer = Buffer.alloc(numberOfBytes)

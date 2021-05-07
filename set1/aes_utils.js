@@ -5,9 +5,9 @@ const { pad } = require('../set2/pkcs7')
 const { xorTwoBuffers } = require('./xor_utils')
 
 /**
- * 
- * @param {*} enciphredBuffer 
- * @param {*} keyBuffer 
+ *
+ * @param {*} enciphredBuffer
+ * @param {*} keyBuffer
  * @returns Buffer containing the decrypted data
  */
 function decryptAes128Ecb (encipheredBuffer, keyBuffer, autoPadding = true) {
@@ -22,9 +22,9 @@ function decryptAes128Ecb (encipheredBuffer, keyBuffer, autoPadding = true) {
 }
 
 /**
- * 
- * @param {Buffer} plainTextBuffer Buffer holding the plain text bytes 
- * @param {Buffer} keyBuffer Buffer holding the key bytes 
+ *
+ * @param {Buffer} plainTextBuffer Buffer holding the plain text bytes
+ * @param {Buffer} keyBuffer Buffer holding the key bytes
  * @param {boolean} autoPadding whether to enable autopadding, default true
  * @returns a Buffer containing the bytes of the encrypted data
  */
@@ -37,31 +37,31 @@ function encryptAes128Ecb (plainTextBuffer, keyBuffer, autoPadding = true) {
   return Buffer.concat([cipher.update(plainTextBuffer), cipher.final()])
 }
 
-function decoder(encoding) {
+function decoder (encoding) {
   return new Transform({
-      objectMode: true,
-      transform: (data, _, done) => {
-        const encoded = Buffer.from(data, encoding)
-        done(null, encoded)
-      }
-    })
+    objectMode: true,
+    transform: (data, _, done) => {
+      const encoded = Buffer.from(data, encoding)
+      done(null, encoded)
+    }
+  })
 }
 
-async function decryptAes128EcbStreamed(filePath, key, encoding = 'base64') {
-    const algorithm = 'aes-128-ecb'
-    const initVector = null // ECB doesn't use an init vector
-    const keyBuffer = Buffer.from(key)
-    const decipher = createDecipheriv(algorithm, keyBuffer, initVector)
+async function decryptAes128EcbStreamed (filePath, key, encoding = 'base64') {
+  const algorithm = 'aes-128-ecb'
+  const initVector = null // ECB doesn't use an init vector
+  const keyBuffer = Buffer.from(key)
+  const decipher = createDecipheriv(algorithm, keyBuffer, initVector)
 
-    createReadStream(filePath, {encoding: 'utf-8'})
+  createReadStream(filePath, { encoding: 'utf-8' })
     .pipe(decoder(encoding))
     .pipe(decipher)
 
-    const results = []
-    for await(const decryptedChunk of decipher) {
-      results.push(decryptedChunk)
-    }
-    return results.toString()
+  const results = []
+  for await (const decryptedChunk of decipher) {
+    results.push(decryptedChunk)
+  }
+  return results.toString()
 }
 
 function encryptAes128Cbc (plainText, key) {
@@ -79,17 +79,17 @@ function encryptAes128Cbc (plainText, key) {
     previousBlock = encryptedBlock
   }
   return {
-    cipherText: Buffer.concat(encryptedBlocks).toString('base64'), 
-    IV: IV.toString('base64') 
+    cipherText: Buffer.concat(encryptedBlocks).toString('base64'),
+    IV: IV.toString('base64')
   }
 }
 
 /**
  * Returns the plain text after performing CBC decryption.
- * @param {base64 encoded String} encrytedText 
- * @param {utf-8 encoded String} key 
+ * @param {base64 encoded String} encrytedText
+ * @param {utf-8 encoded String} key
  * @param {base64 encoded String} IV The initilization vector
- * @param {number} blockSize 
+ * @param {number} blockSize
  * @return {String} The decrypted plain text
  */
 function decryptAes128Cbc (encrytedText, key, IV) {
@@ -97,7 +97,7 @@ function decryptAes128Cbc (encrytedText, key, IV) {
   const buffer = Buffer.from(encrytedText, 'base64')
   const IVBuffer = Buffer.from(IV, 'base64')
   let previousBlock = IVBuffer
-  let plainText = ""
+  let plainText = ''
   for (let i = 0; i < buffer.length; i += blockSize) {
     const block = buffer.slice(i, i + blockSize)
     if (block.length !== blockSize) {
@@ -110,7 +110,6 @@ function decryptAes128Cbc (encrytedText, key, IV) {
   }
   return plainText
 }
-
 
 function detectAesEcb (buffer) {
   const frequencyOfBlockValues = {}
@@ -129,7 +128,6 @@ function detectAesEcb (buffer) {
     }
   }
 }
-
 
 module.exports = {
   decryptAes128Ecb,
