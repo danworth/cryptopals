@@ -4,29 +4,37 @@ const { createReadStream } = require('fs')
 const { pad } = require('../set2/pkcs7')
 const { xorTwoBuffers } = require('./xor_utils')
 
-function decryptAes128Ecb (encryptedString, key, encoding = 'base64') {
+/**
+ * 
+ * @param {*} enciphredBuffer 
+ * @param {*} keyBuffer 
+ * @returns Buffer containing the decrypted data
+ */
+function decryptAes128Ecb (encipheredBuffer, keyBuffer, autoPadding = true) {
   const algorithm = 'aes-128-ecb'
   const initVector = null // ECB doesn't use an init vector
-  const keyBuffer = Buffer.from(key)
 
   const decipher = createDecipheriv(algorithm, keyBuffer, initVector)
-  const decryptedBuffer = decipher.update(encryptedString, encoding)
+  decipher.setAutoPadding(autoPadding)
+  const decryptedBuffer = decipher.update(encipheredBuffer)
   const finalBuffer = decipher.final()
-  return Buffer.concat([decryptedBuffer, finalBuffer]).toString()
+  return Buffer.concat([decryptedBuffer, finalBuffer])
 }
 
-function encryptAes128Ecb (plainText, key) {
+/**
+ * 
+ * @param {Buffer} plainTextBuffer Buffer holding the plain text bytes 
+ * @param {Buffer} keyBuffer Buffer holding the key bytes 
+ * @param {boolean} autoPadding whether to enable autopadding, default true
+ * @returns a Buffer containing the bytes of the encrypted data
+ */
+function encryptAes128Ecb (plainTextBuffer, keyBuffer, autoPadding = true) {
   const algorithm = 'aes-128-ecb'
   const initVector = null // ECB doesn't use an init vector
-  let plainTextBuffer
-  if (!Buffer.isBuffer(plainText)) {
-    plainTextBuffer = Buffer.from(plainText)
-  } else {
-    plainTextBuffer = plainText
-  }
 
-  const cipher = createCipheriv(algorithm, key, initVector)
-  return Buffer.concat([cipher.update(plainTextBuffer), cipher.final()]).toString("base64")
+  const cipher = createCipheriv(algorithm, keyBuffer, initVector)
+  cipher.setAutoPadding(autoPadding)
+  return Buffer.concat([cipher.update(plainTextBuffer), cipher.final()])
 }
 
 function decoder(encoding) {
@@ -56,7 +64,8 @@ async function decryptAes128EcbStreamed(filePath, key, encoding = 'base64') {
     return results.toString()
 }
 
-function encryptAes128Cbc (plainText, key, blockSize = 16) {
+function encryptAes128Cbc (plainText, key) {
+  const blockSize = 16
   const IV = randomBytes(blockSize)
   const plainTextBuffer = Buffer.from(plainText)
   let previousBlock = IV
@@ -64,8 +73,8 @@ function encryptAes128Cbc (plainText, key, blockSize = 16) {
   for (let i = 0; i < plainTextBuffer.length; i += blockSize) {
     const block = plainTextBuffer.slice(i, i + blockSize)
     const paddedBlock = pad(block, blockSize)
-    const xorBlock = xorTwoBuffers(IV, paddedBlock)
-    const encryptedBlock = Buffer.from(encryptAes128Ecb(xorBlock, key))
+    const xorBlock = xorTwoBuffers(previousBlock, paddedBlock)
+    const encryptedBlock = Buffer.from(encryptAes128Ecb(xorBlock, key), 'base64')
     encryptedBlocks.push(encryptedBlock)
     previousBlock = encryptedBlock
   }
@@ -78,24 +87,26 @@ function encryptAes128Cbc (plainText, key, blockSize = 16) {
 /**
  * Returns the plain text after performing CBC decryption.
  * @param {base64 encoded String} encrytedText 
- * @param {base64 encoded String} key 
+ * @param {utf-8 encoded String} key 
  * @param {base64 encoded String} IV The initilization vector
  * @param {number} blockSize 
  * @return {String} The decrypted plain text
  */
-function decryptAes128Cbc (encrytedText, key, IV, blockSize = 16) {
-  const buffer = Buffer.from(encrytedText)
-  const IVBuffer = Buffer.from(IV)
+function decryptAes128Cbc (encrytedText, key, IV) {
+  const blockSize = 16
+  const buffer = Buffer.from(encrytedText, 'base64')
+  const IVBuffer = Buffer.from(IV, 'base64')
   let previousBlock = IVBuffer
   let plainText = ""
-  for (let i = 0; i < buffer.length; i += 16) {
-    const block = buffer.slice(i, i + 16)
-    if (block.length !== 16) {
+  for (let i = 0; i < buffer.length; i += blockSize) {
+    const block = buffer.slice(i, i + blockSize)
+    if (block.length !== blockSize) {
       console.log('here')
     }
-    const decryptedBlock = Buffer.from(decryptAes128Ecb(block, key))
+    const decryptedBlock = Buffer.from(decryptAes128Ecb(block.toString('base64'), key))
     const xorBlock = xorTwoBuffers(previousBlock, decryptedBlock)
     plainText += xorBlock.toString()
+    previousBlock = block
   }
   return plainText
 }

@@ -12,14 +12,14 @@ test('Challenge9: should pad correctly', () => {
 })
 
 test('Challenge10: AesECB encrypt should work', () => {
-  const key = "YELLOW SUBMARINE"
+  const keyBuffer = Buffer.from("YELLOW SUBMARINE")
   const plainText = "It is raining outside"
-  const encryptedCipherText = encryptAes128Ecb(plainText, key)
-  const decryptedText = decryptAes128Ecb(encryptedCipherText, key)
-  expect(decryptedText).toBe(plainText)
+  const encryptedCipherText = encryptAes128Ecb(Buffer.from(plainText), keyBuffer)
+  const decryptedText = decryptAes128Ecb(encryptedCipherText, keyBuffer)
+  expect(decryptedText.toString()).toBe(plainText)
 })
 
-test.only('Challenge10: AES CBC mode should work', () => {
+test.skip('Challenge10: AES CBC mode should work', () => {
   const key = "YELLOW SUBMARINE"
   const plainText = "It is sunny today and I'm going to Legoland tomorrow"
   const { cipherText, IV } = encryptAes128Cbc(plainText, key) 
