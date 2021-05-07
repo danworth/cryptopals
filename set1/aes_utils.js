@@ -74,7 +74,7 @@ function encryptAes128Cbc (plainText, key) {
     const block = plainTextBuffer.slice(i, i + blockSize)
     const paddedBlock = pad(block, blockSize)
     const xorBlock = xorTwoBuffers(previousBlock, paddedBlock)
-    const encryptedBlock = Buffer.from(encryptAes128Ecb(xorBlock, key), 'base64')
+    const encryptedBlock = encryptAes128Ecb(xorBlock, key, false)
     encryptedBlocks.push(encryptedBlock)
     previousBlock = encryptedBlock
   }
@@ -82,6 +82,22 @@ function encryptAes128Cbc (plainText, key) {
     cipherText: Buffer.concat(encryptedBlocks).toString('base64'),
     IV: IV.toString('base64')
   }
+}
+
+/**
+ * Strips the padding from the last block of decrypted blocks
+ * @param {Array of Buffers} blocks the decrypted blocks
+ * @param {Number} blockSize the original block size
+ * used when applying the padding
+ * @returns an Array of Buffers
+ */
+function stripPadding (blocks, blockSize = 16) {
+  const lastBlock = blocks[blocks.length - 1]
+  const lastBlockNoPadding = lastBlock.filter(byte => {
+    return byte > blockSize
+  })
+
+  return [...blocks.slice(0, blocks.length - 1), lastBlockNoPadding]
 }
 
 /**
@@ -94,23 +110,28 @@ function encryptAes128Cbc (plainText, key) {
  */
 function decryptAes128Cbc (encrytedText, key, IV) {
   const blockSize = 16
-  const buffer = Buffer.from(encrytedText, 'base64')
+  const encryptedBytes = Buffer.from(encrytedText, 'base64')
   const IVBuffer = Buffer.from(IV, 'base64')
+  const keyBuffer = Buffer.from(key)
+
   let previousBlock = IVBuffer
-  let plainText = ''
-  for (let i = 0; i < buffer.length; i += blockSize) {
-    const block = buffer.slice(i, i + blockSize)
-    if (block.length !== blockSize) {
-      console.log('here')
-    }
-    const decryptedBlock = Buffer.from(decryptAes128Ecb(block.toString('base64'), key))
+  const decryptedBlocks = []
+  for (let i = 0; i < encryptedBytes.length; i += blockSize) {
+    const block = encryptedBytes.slice(i, i + blockSize)
+    const decryptedBlock = decryptAes128Ecb(block, keyBuffer, false)
     const xorBlock = xorTwoBuffers(previousBlock, decryptedBlock)
-    plainText += xorBlock.toString()
+    decryptedBlocks.push(xorBlock)
     previousBlock = block
   }
-  return plainText
+  return Buffer.concat(stripPadding(decryptedBlocks)).toString()
 }
 
+/**
+ *
+ * @param {Buffer} buffer containing the encrypted bytes
+ * @returns  a String of the hex encoded buffer if ECB
+ * encryption is detected else return undefined.
+ */
 function detectAesEcb (buffer) {
   const frequencyOfBlockValues = {}
   const blockLength = 16
