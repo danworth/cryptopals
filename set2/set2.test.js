@@ -3,7 +3,8 @@ const {
   encryptAes128Ecb,
   decryptAes128Ecb,
   encryptAes128Cbc,
-  decryptAes128Cbc
+  decryptAes128Cbc,
+  encryptionOracle
 } = require('../set1/aes_utils')
 
 test('Challenge9: should pad correctly', () => {
@@ -27,6 +28,15 @@ test('Challenge10: AES CBC mode should work', () => {
   // update these once decryption has been created...
   expect(cipherText).not.toBe(null)
   expect(IV).not.toBe(null)
-  const decryptedText = decryptAes128Cbc(cipherText, key, IV)
+  const decryptedText = decryptAes128Cbc(cipherText.toString('base64'), key, IV.toString('base64'))
   expect(decryptedText).toBe(plainText)
+})
+
+test('Challenge 11: encryptionOracle should work', () => {
+  const plainText = "Would You Still Have Broken It If I Hadn't Said Anything?"
+  const result = encryptionOracle(plainText)
+  for (let i = 0; i < 10; i++) {
+    expect(result.encryptedBuffer).not.toBe(null)
+    expect(['ECB', 'CBC']).toContain(result.encryptionMethod)
+  }
 })

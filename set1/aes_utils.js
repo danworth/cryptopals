@@ -1,4 +1,8 @@
-const { createDecipheriv, createCipheriv, randomBytes } = require('crypto')
+const {
+  createDecipheriv,
+  createCipheriv,
+  randomBytes
+} = require('crypto')
 const { Transform } = require('stream')
 const { createReadStream } = require('fs')
 const { pad } = require('../set2/pkcs7')
@@ -64,6 +68,13 @@ async function decryptAes128EcbStreamed (filePath, key, encoding = 'base64') {
   return results.toString()
 }
 
+/**
+ *  Encrypts the plainText with the provided key and returns the bytes in a
+ *  buffer along with the randoly choosen initialization vector.
+ * @param {Buffer} plainText
+ * @param {Buffer} key
+ * @returns {cipherText: Buffer, IV: Buffer}
+ */
 function encryptAes128Cbc (plainText, key) {
   const blockSize = 16
   const IV = randomBytes(blockSize)
@@ -150,11 +161,63 @@ function detectAesEcb (buffer) {
   }
 }
 
+/** Returns a random integer between the min (inclusive) and
+ * max (exclusive).
+ *
+ * @param {number} min - inclusive
+ * @param {number} max - exclusive
+ * @returns  number
+ */
+function randomNumberBetween (min, max) {
+  return Math.floor(Math.random() * (max - min) + min)
+}
+
+/**
+ * Returns true or false randomly
+ */
+function fiftyFifty () {
+  return Math.random() < 0.5
+}
+
+/** Encrypts plainText with a randomly generated key using either
+ * ECB or CBC mode choosen at random (randonly generated IV is used
+ * for CBC mode). Prepends 5-10 bytes (count chosen at random) and
+ * appends 5-10 bytes (count chosen at random) to the plainText before
+ * encryption.
+ *
+ * @param {String} plainText
+ * @returns {String: encryption method, Buffer: encrypted plainText}
+ */
+function encryptionOracle (plainText) {
+  const keyBuffer = randomBytes(16)
+  const prependedBytes = randomBytes(randomNumberBetween(5, 11))
+  const appendedBytes = randomBytes(randomNumberBetween(5, 11))
+  const inputBuffer = Buffer.concat([
+    prependedBytes,
+    Buffer.from(plainText),
+    appendedBytes])
+
+  let encryptedBuffer, encryptionMethod
+  if (fiftyFifty()) {
+    encryptedBuffer = encryptAes128Ecb(inputBuffer, keyBuffer)
+    encryptionMethod = 'ECB'
+  } else {
+    encryptedBuffer = encryptAes128Cbc(inputBuffer, keyBuffer)
+    encryptionMethod = 'CBC'
+  }
+
+  return {
+    encryptedBuffer,
+    encryptionMethod
+  }
+}
+
 module.exports = {
   decryptAes128Ecb,
   decryptAes128EcbStreamed,
   encryptAes128Ecb,
   encryptAes128Cbc,
   decryptAes128Cbc,
-  detectAesEcb
+  detectAesEcb,
+  encryptionOracle
 }
