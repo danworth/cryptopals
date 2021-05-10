@@ -20,7 +20,7 @@ test('Challenge10: AesECB encrypt should work', () => {
   expect(decryptedText.toString()).toBe(plainText)
 })
 
-test.only('Challenge10: AES CBC mode should work', () => {
+test('Challenge10: AES CBC mode should work', () => {
   const key = 'YELLOW SUBMARINE'
   const plainText = "It is sunny today and I'm going to Legoland tomorrow"
   const { cipherText, IV } = encryptAes128Cbc(plainText, key)
