@@ -9,10 +9,14 @@ const { pad } = require('../set2/pkcs7')
 const { xorTwoBuffers } = require('./xor_utils')
 
 /**
- *
- * @param {*} enciphredBuffer
- * @param {*} keyBuffer
- * @returns Buffer containing the decrypted data
+ * Decrypts the contents of the encipheredBuffer using the provided
+ * keyBuffer. 
+ * 
+ * @param {Buffer} encipheredBuffer A buffer holding the enciphered bytes.
+ * @param {Buffer} keyBuffer A buffer holding the bytes of the key.
+ * @param {boolean} autoPadding If the encipheredBuffer is already padded
+ * then set this to false.
+ * @returns {Buffer} A buffer containing the decrypted bytes.
  */
 function decryptAes128Ecb (encipheredBuffer, keyBuffer, autoPadding = true) {
   const algorithm = 'aes-128-ecb'
@@ -73,7 +77,7 @@ async function decryptAes128EcbStreamed (filePath, key, encoding = 'base64') {
  *  buffer along with the randoly choosen initialization vector.
  * @param {Buffer} plainText
  * @param {Buffer} key
- * @returns {cipherText: Buffer, IV: Buffer}
+ * @returns {Buffer encryptedBuffer, Buffer IV} 
  */
 function encryptAes128Cbc (plainText, key) {
   const blockSize = 16
@@ -90,8 +94,8 @@ function encryptAes128Cbc (plainText, key) {
     previousBlock = encryptedBlock
   }
   return {
-    cipherText: Buffer.concat(encryptedBlocks).toString('base64'),
-    IV: IV.toString('base64')
+    encryptedBuffer: Buffer.concat(encryptedBlocks),
+    IV
   }
 }
 
@@ -138,14 +142,19 @@ function decryptAes128Cbc (encrytedText, key, IV) {
 }
 
 /**
+ * Provided a Buffer of bytes this function attempts to detect ECB
+ * mode encryption by looking for a reapting sequence of bytes of
+ * blockLength size. If a repeating block is found then it returns
+ * the buffer of bytes as a hex String, otherwise returns undefined.
  *
- * @param {Buffer} buffer containing the encrypted bytes
- * @returns  a String of the hex encoded buffer if ECB
+ * @param {Buffer} buffer A buffer containing the encrypted bytes.
+ * @param {Number} blockLength The length of repeating byte 
+ * sequences to search for.
+ * @returns  {String} the hex encoded buffer as a String if ECB
  * encryption is detected else return undefined.
  */
-function detectAesEcb (buffer) {
+function detectAesEcb (buffer, blockLength = 8) {
   const frequencyOfBlockValues = {}
-  const blockLength = 16
   for (let i = 0; i + blockLength < buffer.length; i += blockLength) {
     const blockHex = buffer.slice(i, i + blockLength).toString('hex')
     if (blockHex in frequencyOfBlockValues) {
@@ -155,11 +164,12 @@ function detectAesEcb (buffer) {
     }
   }
   for (const frequency of Object.values(frequencyOfBlockValues)) {
-    if (frequency > 1) {
+    if (frequency > 1 ) {
       return buffer.toString('hex')
     }
   }
 }
+
 
 /** Returns a random integer between the min (inclusive) and
  * max (exclusive).
@@ -188,7 +198,7 @@ function fiftyFifty () {
  * @param {String} plainText
  * @returns {String: encryption method, Buffer: encrypted plainText}
  */
-function encryptionOracle (plainText) {
+function encryptEitherECBorCBC (plainText) {
   const keyBuffer = randomBytes(16)
   const prependedBytes = randomBytes(randomNumberBetween(5, 11))
   const appendedBytes = randomBytes(randomNumberBetween(5, 11))
@@ -202,7 +212,7 @@ function encryptionOracle (plainText) {
     encryptedBuffer = encryptAes128Ecb(inputBuffer, keyBuffer)
     encryptionMethod = 'ECB'
   } else {
-    encryptedBuffer = encryptAes128Cbc(inputBuffer, keyBuffer)
+    encryptedBuffer = encryptAes128Cbc(inputBuffer, keyBuffer).encryptedBuffer
     encryptionMethod = 'CBC'
   }
 
@@ -212,6 +222,21 @@ function encryptionOracle (plainText) {
   }
 }
 
+/**
+ * When provided a buffer of bytes encrypted with either aes-128-ecb
+ * of aes-128-cbc will return which mode was used.
+ * @param {Buffer} encipheredBuffer Buffer holding the encrypted bytes
+ * which have been encrypted with either aes-128-ecb or aes-128-cbc
+ * @returns String Either 'ECB' or 'CBC'.
+ */
+function detectECBorCBC(encipheredBuffer) {
+  if (detectAesEcb(encipheredBuffer)) {
+    return 'ECB'
+  }
+  return 'CBC'
+}
+
+
 module.exports = {
   decryptAes128Ecb,
   decryptAes128EcbStreamed,
@@ -219,5 +244,6 @@ module.exports = {
   encryptAes128Cbc,
   decryptAes128Cbc,
   detectAesEcb,
-  encryptionOracle
+  encryptEitherECBorCBC,
+  detectECBorCBC
 }
