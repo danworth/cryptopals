@@ -222,6 +222,61 @@ function encryptEitherECBorCBC (plainText) {
   }
 }
 
+const RANDOM_KEY = randomBytes(16)
+
+function encryptAes128EcbWithRandomKey(plainBuffer) {
+  return encryptAes128Ecb(plainBuffer, RANDOM_KEY)
+}
+
+/**
+ * Keeps adding a single byte 'A' to be encrypted until the first n bytes
+ * start repeating. Returns n as the predicted block size. 
+ * @returns Number predicted block size
+ */
+function findBlockSizeForEcb() {
+  let previousResult = Buffer.alloc(0)
+  for (let i = 2; i < 64; i++) {
+    const plainBuffer = new Array(i + 1).join('A')
+    const resultBuffer = encryptAes128EcbWithRandomKey(plainBuffer)
+    if (previousResult.slice(0, i - 1).toString('hex')  === resultBuffer.slice(0, i - 1).toString('hex')) {
+      return i - 1
+    }
+    previousResult = resultBuffer
+  }
+}
+
+function createDictionary(prependedBlock) {
+  const dictionary = {}
+  for (let i = 0; i < 255; i++) {
+    const plainBuffer = Buffer.concat([prependedBlock, Buffer.from([i])])
+    const encryptedBuffer = encryptAes128EcbWithRandomKey(plainBuffer).slice(0, 16)
+    dictionary[encryptedBuffer.toString('hex')] = plainBuffer
+  }
+  return dictionary
+}
+
+function crackAes128ECB(plainBuffer) {
+  const predictedBlockSize = findBlockSizeForEcb()
+  if (detectECBorCBC(encryptAes128EcbWithRandomKey(new Array(33).join('A'))) !== 'ECB') {
+    throw new Error('Encryption method is not ECB')
+  }
+
+  let decryptedResult
+  // just get the first byte for now....
+  for (let i = predictedBlockSize; i > predictedBlockSize - 1; i--) {
+    const prependedBlock = Buffer.from(new Array(i).join('A'))
+    const dictionary = createDictionary(prependedBlock)
+    const combinedBuffer = Buffer.concat([prependedBlock, plainBuffer])
+    const encryptionResult = encryptAes128EcbWithRandomKey(combinedBuffer)
+    const firstBlock = encryptionResult.slice(0, predictedBlockSize).toString('hex')
+    const dictionaryResult = dictionary[firstBlock]
+    const nextLetter = String.fromCharCode(dictionaryResult[i - 1])
+    decryptedResult += nextLetter
+  }
+  return decryptedResult
+}
+
+
 /**
  * When provided a buffer of bytes encrypted with either aes-128-ecb
  * of aes-128-cbc will return which mode was used.
@@ -245,5 +300,7 @@ module.exports = {
   decryptAes128Cbc,
   detectAesEcb,
   encryptEitherECBorCBC,
-  detectECBorCBC
+  detectECBorCBC,
+  findBlockSizeForEcb,
+  crackAes128ECB
 }
