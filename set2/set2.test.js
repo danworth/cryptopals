@@ -33,8 +33,10 @@ test('Challenge10: AES CBC mode should work', () => {
   expect(decryptedText).toBe(plainText)
 })
 
-test.skip('Challenge 11: encryptionOracle should work', () => {
-  const plainText = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+test('Challenge 11: encryptionOracle should work', () => {
+  // 43 a's will always work because it garantees 2 x 16 byte blocks of 'a's
+  // regardless of the random 5-10 byte prepended to the begining.
+  const plainText = new Array(44).join('a')
   for (let i = 0; i < 10; i++) {
     const result = encryptEitherECBorCBC(plainText)
     expect(result.encryptedBuffer).not.toBe(null)

@@ -153,7 +153,7 @@ function decryptAes128Cbc (encrytedText, key, IV) {
  * @returns  {String} the hex encoded buffer as a String if ECB
  * encryption is detected else return undefined.
  */
-function detectAesEcb (buffer, blockLength = 8) {
+function detectAesEcb (buffer, blockLength = 16) {
   const frequencyOfBlockValues = {}
   for (let i = 0; i + blockLength < buffer.length; i += blockLength) {
     const blockHex = buffer.slice(i, i + blockLength).toString('hex')
