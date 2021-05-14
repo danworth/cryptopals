@@ -60,4 +60,3 @@ Did you stop? No, I just drove by
   const cracked = crackOracle()
   expect(cracked.trim()).toBe(expectedText.trim())
 })
-

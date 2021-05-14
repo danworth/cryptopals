@@ -10,8 +10,8 @@ const { xorTwoBuffers } = require('./xor_utils')
 
 /**
  * Decrypts the contents of the encipheredBuffer using the provided
- * keyBuffer. 
- * 
+ * keyBuffer.
+ *
  * @param {Buffer} encipheredBuffer A buffer holding the enciphered bytes.
  * @param {Buffer} keyBuffer A buffer holding the bytes of the key.
  * @param {boolean} autoPadding If the encipheredBuffer is already padded
@@ -77,7 +77,7 @@ async function decryptAes128EcbStreamed (filePath, key, encoding = 'base64') {
  *  buffer along with the randoly choosen initialization vector.
  * @param {Buffer} plainText
  * @param {Buffer} key
- * @returns {Buffer encryptedBuffer, Buffer IV} 
+ * @returns {Buffer encryptedBuffer, Buffer IV}
  */
 function encryptAes128Cbc (plainText, key) {
   const blockSize = 16
@@ -148,7 +148,7 @@ function decryptAes128Cbc (encrytedText, key, IV) {
  * the buffer of bytes as a hex String, otherwise returns undefined.
  *
  * @param {Buffer} buffer A buffer containing the encrypted bytes.
- * @param {Number} blockLength The length of repeating byte 
+ * @param {Number} blockLength The length of repeating byte
  * sequences to search for.
  * @returns  {String} the hex encoded buffer as a String if ECB
  * encryption is detected else return undefined.
@@ -164,12 +164,11 @@ function detectAesEcb (buffer, blockLength = 16) {
     }
   }
   for (const frequency of Object.values(frequencyOfBlockValues)) {
-    if (frequency > 1 ) {
+    if (frequency > 1) {
       return buffer.toString('hex')
     }
   }
 }
-
 
 /** Returns a random integer between the min (inclusive) and
  * max (exclusive).
@@ -224,7 +223,7 @@ function encryptEitherECBorCBC (plainText) {
 
 const RANDOM_KEY = randomBytes(16)
 
-function oracleFunction(plainBuffer) {
+function oracleFunction (plainBuffer) {
   const unknownBuffer = Buffer.from(`Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
   aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
   dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
@@ -235,10 +234,10 @@ function oracleFunction(plainBuffer) {
 
 /**
  * Keeps adding a single byte 'A' to be encrypted until the first n bytes
- * start repeating. Returns n as the predicted block size. 
+ * start repeating. Returns n as the predicted block size.
  * @returns Number predicted block size
  */
-function findOracleBlockSize() {
+function findOracleBlockSize () {
   let previousResult = oracleFunction(Buffer.alloc(1, 'A'))
   for (let i = 2; i < 64; i++) {
     const currentResult = oracleFunction(Buffer.alloc(i, 'A'))
@@ -249,7 +248,7 @@ function findOracleBlockSize() {
   }
 }
 
-function crackOracle() {
+function crackOracle () {
   const predictedBlockSize = findOracleBlockSize()
 
   if (detectECBorCBC(oracleFunction(Buffer.alloc(33, 'A'))) !== 'ECB') {
@@ -258,14 +257,14 @@ function crackOracle() {
 
   const payloadLength = oracleFunction(Buffer.alloc(0)).length - 7 // need to sort this out :)
 
-  let result = ""
-  for(let i = 0; i < payloadLength; i++) {
+  let result = ''
+  for (let i = 0; i < payloadLength; i++) {
     const blockNumber = Math.floor(i / predictedBlockSize)
     const numberOfAs = (predictedBlockSize - (i % predictedBlockSize) - 1)
     const As = Buffer.alloc(numberOfAs, 'A')
     const encryptionResult = oracleFunction(As)
     const targetBlock = encryptionResult.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
-    for (let x = 0; x < 255; x++){
+    for (let x = 0; x < 255; x++) {
       const input = Buffer.concat([As, Buffer.from(result), Buffer.from([x])])
       const encrypted = oracleFunction(input)
       const blockToCheck = encrypted.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
@@ -278,7 +277,6 @@ function crackOracle() {
   return result
 }
 
-
 /**
  * When provided a buffer of bytes encrypted with either aes-128-ecb
  * of aes-128-cbc will return which mode was used.
@@ -286,13 +284,12 @@ function crackOracle() {
  * which have been encrypted with either aes-128-ecb or aes-128-cbc
  * @returns String Either 'ECB' or 'CBC'.
  */
-function detectECBorCBC(encipheredBuffer) {
+function detectECBorCBC (encipheredBuffer) {
   if (detectAesEcb(encipheredBuffer)) {
     return 'ECB'
   }
   return 'CBC'
 }
-
 
 module.exports = {
   decryptAes128Ecb,
