@@ -6,8 +6,8 @@ const {
   decryptAes128Cbc,
   encryptEitherECBorCBC,
   detectECBorCBC,
-  findBlockSizeForEcb,
-  crackAes128ECB
+  findOracleBlockSize,
+  crackOracle
 } = require('../set1/aes_utils')
 
 test('Challenge9: should pad correctly', () => {
@@ -48,14 +48,16 @@ test('Challenge 11: encryptionOracle should work', () => {
 })
 
 test('Challenge 12: should find block size', () => {
-  expect(findBlockSizeForEcb()).toBe(16)
+  expect(findOracleBlockSize()).toBe(16)
 })
 
-test.only('Challenge 12: should crack ECB', () => {
-  const plainText = `Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
-  aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
-  dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
-  YnkK`
-  const plainBuffer = Buffer.from(plainText, 'base64')
-  expect(crackAes128ECB(plainBuffer)).not.toBe(null)
+test('Challenge 12: should crack ECB', () => {
+  const expectedText = `Rollin' in my 5.0
+With my rag-top down so my hair can blow
+The girlies on standby waving just to say hi
+Did you stop? No, I just drove by
+`
+  const cracked = crackOracle()
+  expect(cracked.trim()).toBe(expectedText.trim())
 })
+

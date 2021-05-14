@@ -224,8 +224,13 @@ function encryptEitherECBorCBC (plainText) {
 
 const RANDOM_KEY = randomBytes(16)
 
-function encryptAes128EcbWithRandomKey(plainBuffer) {
-  return encryptAes128Ecb(plainBuffer, RANDOM_KEY)
+function oracleFunction(plainBuffer) {
+  const unknownBuffer = Buffer.from(`Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+  aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+  dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+  YnkK`, 'base64')
+
+  return encryptAes128Ecb(Buffer.concat([plainBuffer, unknownBuffer]), RANDOM_KEY)
 }
 
 /**
@@ -233,47 +238,44 @@ function encryptAes128EcbWithRandomKey(plainBuffer) {
  * start repeating. Returns n as the predicted block size. 
  * @returns Number predicted block size
  */
-function findBlockSizeForEcb() {
-  let previousResult = Buffer.alloc(0)
+function findOracleBlockSize() {
+  let previousResult = oracleFunction(Buffer.alloc(1, 'A'))
   for (let i = 2; i < 64; i++) {
-    const plainBuffer = new Array(i + 1).join('A')
-    const resultBuffer = encryptAes128EcbWithRandomKey(plainBuffer)
-    if (previousResult.slice(0, i - 1).toString('hex')  === resultBuffer.slice(0, i - 1).toString('hex')) {
+    const currentResult = oracleFunction(Buffer.alloc(i, 'A'))
+    if (currentResult.slice(0, 4).toString('hex') === previousResult.slice(0, 4).toString('hex')) {
       return i - 1
     }
-    previousResult = resultBuffer
+    previousResult = currentResult
   }
 }
 
-function createDictionary(prependedBlock) {
-  const dictionary = {}
-  for (let i = 0; i < 255; i++) {
-    const plainBuffer = Buffer.concat([prependedBlock, Buffer.from([i])])
-    const encryptedBuffer = encryptAes128EcbWithRandomKey(plainBuffer).slice(0, 16)
-    dictionary[encryptedBuffer.toString('hex')] = plainBuffer
-  }
-  return dictionary
-}
+function crackOracle() {
+  const predictedBlockSize = 16//findBlockSizeForEcb()
 
-function crackAes128ECB(plainBuffer) {
-  const predictedBlockSize = findBlockSizeForEcb()
-  if (detectECBorCBC(encryptAes128EcbWithRandomKey(new Array(33).join('A'))) !== 'ECB') {
+  if (detectECBorCBC(oracleFunction(Buffer.alloc(33, 'A'))) !== 'ECB') {
     throw new Error('Encryption method is not ECB')
   }
 
-  let decryptedResult
-  // just get the first byte for now....
-  for (let i = predictedBlockSize; i > predictedBlockSize - 1; i--) {
-    const prependedBlock = Buffer.from(new Array(i).join('A'))
-    const dictionary = createDictionary(prependedBlock)
-    const combinedBuffer = Buffer.concat([prependedBlock, plainBuffer])
-    const encryptionResult = encryptAes128EcbWithRandomKey(combinedBuffer)
-    const firstBlock = encryptionResult.slice(0, predictedBlockSize).toString('hex')
-    const dictionaryResult = dictionary[firstBlock]
-    const nextLetter = String.fromCharCode(dictionaryResult[i - 1])
-    decryptedResult += nextLetter
+  const payloadLength = oracleFunction(Buffer.alloc(0)).length - 7 // need to sort this out :)
+
+  let result = ""
+  for(let i = 0; i < payloadLength; i++) {
+    const blockNumber = Math.floor(i / predictedBlockSize)
+    const numberOfAs = (predictedBlockSize - (i % predictedBlockSize) - 1)
+    const As = Buffer.alloc(numberOfAs, 'A')
+    const encryptionResult = oracleFunction(As)
+    const targetBlock = encryptionResult.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
+    for (let x = 0; x < 255; x++){
+      const input = Buffer.concat([As, Buffer.from(result), Buffer.from([x])])
+      const encrypted = oracleFunction(input)
+      const blockToCheck = encrypted.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
+      if (blockToCheck.toString('hex') === targetBlock.toString('hex')) {
+        result += String.fromCharCode(x)
+        break
+      }
+    }
   }
-  return decryptedResult
+  return result
 }
 
 
@@ -301,6 +303,7 @@ module.exports = {
   detectAesEcb,
   encryptEitherECBorCBC,
   detectECBorCBC,
-  findBlockSizeForEcb,
-  crackAes128ECB
+  findOracleBlockSize,
+  crackOracle,
+  oracleFunction
 }
