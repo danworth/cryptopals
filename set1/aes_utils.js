@@ -250,7 +250,7 @@ function findOracleBlockSize() {
 }
 
 function crackOracle() {
-  const predictedBlockSize = 16//findBlockSizeForEcb()
+  const predictedBlockSize = findOracleBlockSize()
 
   if (detectECBorCBC(oracleFunction(Buffer.alloc(33, 'A'))) !== 'ECB') {
     throw new Error('Encryption method is not ECB')
