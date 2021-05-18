@@ -9,7 +9,8 @@ const {
   findOracleBlockSize,
   crackOracleII
 } = require('../set1/aes_utils')
-const { parseParams, profileFor } = require('./profileUtils')
+const { parseParams, profileFor,
+  encryptEncodedParams, decryptEncodedParams} = require('./profileUtils')
 
 test('Challenge9: should pad correctly', () => {
   const plainText = Buffer.from('YELLOW SUBMARINE')
@@ -62,7 +63,7 @@ Did you stop? No, I just drove by
   expect(cracked.trim()).toBe(expectedText.trim())
 })
 
-test.only('Challenge 13: parseParams should work', () => {
+test('Challenge 13: parseParams should work', () => {
   const inputParams = "foo=bar&baz=qux&zap=zazzle"
   const expectedOutput = {
     foo: 'bar',
@@ -72,15 +73,22 @@ test.only('Challenge 13: parseParams should work', () => {
   expect(parseParams(inputParams)).toStrictEqual(expectedOutput)
 })
 
-test.only('Challenge 13: profileFor function should work', () => {
+test('Challenge 13: profileFor function should work', () => {
   const emailAddress = "foo@bar.com"
   const expectedOutput = 'email=foo@bar.com&uid=10&role=user'
   expect(profileFor(emailAddress)).toBe(expectedOutput)
 })
 
-test.only('Challenge 13: email address cannot contain & or =', () => {
+test('Challenge 13: email address cannot contain & or =', () => {
   const invalidEmailAddress = 'foo@bar.com&role=admin'
   expect(() => {
     profileFor(invalidEmailAddress)
   }).toThrow()
+})
+
+test('Challenge 13: encrypt and decrypt user profile should work', () => {
+  const encodedUserProfile = profileFor('me@something.com')
+  const encryptedEncodedParams = encryptEncodedParams(encodedUserProfile)
+  const decryptedUserProfile = decryptEncodedParams(encryptedEncodedParams)
+  expect(decryptedUserProfile).toStrictEqual(parseParams(encodedUserProfile))
 })
