@@ -30,6 +30,7 @@ function decryptAes128Ecb (encipheredBuffer, keyBuffer, autoPadding = true) {
 }
 
 /**
+ * Encrypts the plainTextBuffer using aes-128-ecb and the keyBuffer provided.
  *
  * @param {Buffer} plainTextBuffer Buffer holding the plain text bytes
  * @param {Buffer} keyBuffer Buffer holding the key bytes
@@ -45,6 +46,13 @@ function encryptAes128Ecb (plainTextBuffer, keyBuffer, autoPadding = true) {
   return Buffer.concat([cipher.update(plainTextBuffer), cipher.final()])
 }
 
+/**
+ * Returns a Transform stream which decodes the input from
+ * the provided encoding format into a Buffer of bytes.
+ *
+ * @param {String} The encoding to decode from
+ * @returns  Transform stream which decodes the input
+ */
 function decoder (encoding) {
   return new Transform({
     objectMode: true,
@@ -55,6 +63,14 @@ function decoder (encoding) {
   })
 }
 
+/**
+ * Stream implementation the contents of a file using decrypting aes-128-ecb
+ *
+ * @param {String} filePath
+ * @param {String} key
+ * @param {String} encoding
+ * @returns  String the plaintext
+ */
 async function decryptAes128EcbStreamed (filePath, key, encoding = 'base64') {
   const algorithm = 'aes-128-ecb'
   const initVector = null // ECB doesn't use an init vector
@@ -170,7 +186,8 @@ function detectAesEcb (buffer, blockLength = 16) {
   }
 }
 
-/** Returns a random integer between the min (inclusive) and
+/**
+ * Returns a random integer between the min (inclusive) and
  * max (exclusive).
  *
  * @param {number} min - inclusive
@@ -188,7 +205,8 @@ function fiftyFifty () {
   return Math.random() < 0.5
 }
 
-/** Encrypts plainText with a randomly generated key using either
+/**
+ * Encrypts plainText with a randomly generated key using either
  * ECB or CBC mode choosen at random (randonly generated IV is used
  * for CBC mode). Prepends 5-10 bytes (count chosen at random) and
  * appends 5-10 bytes (count chosen at random) to the plainText before
@@ -223,7 +241,17 @@ function encryptEitherECBorCBC (plainText) {
 
 const RANDOM_KEY = randomBytes(16)
 
-function oracleFunction (plainBuffer) {
+/**
+ * Prepends the input to some unknown text before encrypting it with aes-128-ecb
+ * using a constant key unknown to the caller.
+ *
+ * @param {Buffer} plainBuffer This buffer is prepended to some unknown text
+ * before they are encrypted using aes-128-ecb with a consistent unknown key
+ * and returned.
+ * @returns Buffer The encyphered combination of plainBuffer and some unknown
+ * text
+ */
+function oracleII (plainBuffer) {
   const unknownBuffer = Buffer.from(`Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
   aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
   dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
@@ -238,9 +266,9 @@ function oracleFunction (plainBuffer) {
  * @returns Number predicted block size
  */
 function findOracleBlockSize () {
-  let previousResult = oracleFunction(Buffer.alloc(1, 'A'))
+  let previousResult = oracleII(Buffer.alloc(1, 'A'))
   for (let i = 2; i < 64; i++) {
-    const currentResult = oracleFunction(Buffer.alloc(i, 'A'))
+    const currentResult = oracleII(Buffer.alloc(i, 'A'))
     if (currentResult.slice(0, 4).toString('hex') === previousResult.slice(0, 4).toString('hex')) {
       return i - 1
     }
@@ -248,25 +276,32 @@ function findOracleBlockSize () {
   }
 }
 
-function crackOracle () {
+/**
+ * Exploits the deterministic nature of ECB mode to decipher the unknown text
+ * that the oracleII function appends to input.
+ *
+ * @returns String The unknown text that the oracleII function doesn't want
+ * you to know.
+ */
+function crackOracleII () {
   const predictedBlockSize = findOracleBlockSize()
 
-  if (detectECBorCBC(oracleFunction(Buffer.alloc(33, 'A'))) !== 'ECB') {
+  if (detectECBorCBC(oracleII(Buffer.alloc(33, 'A'))) !== 'ECB') {
     throw new Error('Encryption method is not ECB')
   }
 
-  const payloadLength = oracleFunction(Buffer.alloc(0)).length - 7 // need to sort this out :)
+  const payloadLength = oracleII(Buffer.alloc(0)).length - 7 // need to sort this out :)
 
   let result = ''
   for (let i = 0; i < payloadLength; i++) {
     const blockNumber = Math.floor(i / predictedBlockSize)
     const numberOfAs = (predictedBlockSize - (i % predictedBlockSize) - 1)
     const As = Buffer.alloc(numberOfAs, 'A')
-    const encryptionResult = oracleFunction(As)
+    const encryptionResult = oracleII(As)
     const targetBlock = encryptionResult.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
     for (let x = 0; x < 255; x++) {
       const input = Buffer.concat([As, Buffer.from(result), Buffer.from([x])])
-      const encrypted = oracleFunction(input)
+      const encrypted = oracleII(input)
       const blockToCheck = encrypted.slice(blockNumber * predictedBlockSize, (blockNumber + 1) * predictedBlockSize)
       if (blockToCheck.toString('hex') === targetBlock.toString('hex')) {
         result += String.fromCharCode(x)
@@ -301,6 +336,6 @@ module.exports = {
   encryptEitherECBorCBC,
   detectECBorCBC,
   findOracleBlockSize,
-  crackOracle,
-  oracleFunction
+  crackOracleII,
+  oracleFunction: oracleII
 }

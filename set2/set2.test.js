@@ -7,7 +7,7 @@ const {
   encryptEitherECBorCBC,
   detectECBorCBC,
   findOracleBlockSize,
-  crackOracle
+  crackOracleII
 } = require('../set1/aes_utils')
 
 test('Challenge9: should pad correctly', () => {
@@ -57,6 +57,6 @@ With my rag-top down so my hair can blow
 The girlies on standby waving just to say hi
 Did you stop? No, I just drove by
 `
-  const cracked = crackOracle()
+  const cracked = crackOracleII()
   expect(cracked.trim()).toBe(expectedText.trim())
 })
