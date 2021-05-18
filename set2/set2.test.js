@@ -9,6 +9,7 @@ const {
   findOracleBlockSize,
   crackOracleII
 } = require('../set1/aes_utils')
+const { parseParams } = require('./profileUtils')
 
 test('Challenge9: should pad correctly', () => {
   const plainText = Buffer.from('YELLOW SUBMARINE')
@@ -59,4 +60,14 @@ Did you stop? No, I just drove by
 `
   const cracked = crackOracleII()
   expect(cracked.trim()).toBe(expectedText.trim())
+})
+
+test.only('Challenge 13: parseParams should work', () => {
+  const inputParams = "foo=bar&baz=qux&zap=zazzle"
+  const expectedOutput = {
+    foo: 'bar',
+    baz: 'qux',
+    zap: 'zazzle'
+  }
+  expect(parseParams(inputParams)).toStrictEqual(expectedOutput)
 })
