@@ -12,6 +12,39 @@ function parseParams(params) {
   }, {})
 }
 
+/**
+ * 
+ * @param {Object} userObject Containing 'email', 'uid' and 'role'
+ * @returns String representing the object encoded as url parameters
+ */
+function parseToParams(userObject) {
+  const params = Object.keys(userObject).reduce((result, key) => {
+    result += `${key}=${userObject[key]}&`
+    return result
+  }, "")
+  return params.replace(/&$/, '')
+}
+
+/**
+ * Takes a user's email address and returns a new profile with a random
+ * uid and role of 'user'. The result is encoded as url parameters.
+ * 
+ * @param {String} emailAddress 
+ * @returns {}
+ */
+function profileFor(emailAddress) {
+  if (emailAddress.match(/[&=]/)) {
+    throw new Error('Email address must not container & or =')
+  }
+
+  return parseToParams({
+    email: emailAddress,
+    uid: 10,
+    role: 'user'
+  })
+}
+
 module.exports = {
-  parseParams
+  parseParams,
+  profileFor
 }

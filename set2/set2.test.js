@@ -9,7 +9,7 @@ const {
   findOracleBlockSize,
   crackOracleII
 } = require('../set1/aes_utils')
-const { parseParams } = require('./profileUtils')
+const { parseParams, profileFor } = require('./profileUtils')
 
 test('Challenge9: should pad correctly', () => {
   const plainText = Buffer.from('YELLOW SUBMARINE')
@@ -70,4 +70,17 @@ test.only('Challenge 13: parseParams should work', () => {
     zap: 'zazzle'
   }
   expect(parseParams(inputParams)).toStrictEqual(expectedOutput)
+})
+
+test.only('Challenge 13: profileFor function should work', () => {
+  const emailAddress = "foo@bar.com"
+  const expectedOutput = 'email=foo@bar.com&uid=10&role=user'
+  expect(profileFor(emailAddress)).toBe(expectedOutput)
+})
+
+test.only('Challenge 13: email address cannot contain & or =', () => {
+  const invalidEmailAddress = 'foo@bar.com&role=admin'
+  expect(() => {
+    profileFor(invalidEmailAddress)
+  }).toThrow()
 })
