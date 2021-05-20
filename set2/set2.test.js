@@ -1,4 +1,5 @@
 const { pad } = require('./pkcs7')
+
 const {
   encryptAes128Ecb,
   decryptAes128Ecb,
@@ -9,8 +10,14 @@ const {
   findOracleBlockSize,
   crackOracleII
 } = require('../set1/aes_utils')
-const { parseParams, profileFor,
-  encryptEncodedParams, decryptEncodedParams} = require('./profileUtils')
+
+const {
+  parseParams,
+  profileFor,
+  encryptEncodedParams,
+  decryptEncodedParams,
+  createAdminRole
+} = require('./profileUtils')
 
 test('Challenge9: should pad correctly', () => {
   const plainText = Buffer.from('YELLOW SUBMARINE')
@@ -64,7 +71,7 @@ Did you stop? No, I just drove by
 })
 
 test('Challenge 13: parseParams should work', () => {
-  const inputParams = "foo=bar&baz=qux&zap=zazzle"
+  const inputParams = 'foo=bar&baz=qux&zap=zazzle'
   const expectedOutput = {
     foo: 'bar',
     baz: 'qux',
@@ -74,7 +81,7 @@ test('Challenge 13: parseParams should work', () => {
 })
 
 test('Challenge 13: profileFor function should work', () => {
-  const emailAddress = "foo@bar.com"
+  const emailAddress = 'foo@bar.com'
   const expectedOutput = 'email=foo@bar.com&uid=10&role=user'
   expect(profileFor(emailAddress)).toBe(expectedOutput)
 })
@@ -91,4 +98,10 @@ test('Challenge 13: encrypt and decrypt user profile should work', () => {
   const encryptedEncodedParams = encryptEncodedParams(encodedUserProfile)
   const decryptedUserProfile = decryptEncodedParams(encryptedEncodedParams)
   expect(decryptedUserProfile).toStrictEqual(parseParams(encodedUserProfile))
+})
+
+test('Challenge 13: create a user with admin profile should work', () => {
+  const encryptedEncodedParams = createAdminRole('dan@test.test')
+  const decryptedUserProfile = decryptEncodedParams(encryptedEncodedParams)
+  expect(decryptedUserProfile.role).toBe('admin')
 })
