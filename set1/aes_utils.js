@@ -260,6 +260,7 @@ function oracleII (plainBuffer) {
   return encryptAes128Ecb(Buffer.concat([plainBuffer, unknownBuffer]), RANDOM_KEY)
 }
 
+
 /**
  * Keeps adding a single byte 'A' to be encrypted until the first n bytes
  * start repeating. Returns n as the predicted block size.
@@ -292,6 +293,10 @@ function crackOracleII () {
 
   const payloadLength = oracleII(Buffer.alloc(0)).length - 7 // need to sort this out :)
 
+  // manipulate the length of input text so that the first unknown byte is the
+  // last byte in a block. Then keep changing that last byte of the block within
+  // the unknown byte and encrypting it until we find a match and therefor the
+  // value of the last unknown byte.
   let result = ''
   for (let i = 0; i < payloadLength; i++) {
     const blockNumber = Math.floor(i / predictedBlockSize)
@@ -326,6 +331,32 @@ function detectECBorCBC (encipheredBuffer) {
   return 'CBC'
 }
 
+/**
+ * Challenge 14: Prepends random length of random bytes to the input and then
+ * prepends it to some unknown text before encrypting it with aes-128-ecb using
+ * a constant key unknown to the caller.
+ *
+ * @param {Buffer} plainBuffer This buffer is prepended to some unknown text
+ * before they are encrypted using aes-128-ecb with a consistent unknown key
+ * and returned.
+ * @returns Buffer The encyphered combination of plainBuffer and some unknown
+ * text
+ */
+function oracleIII (plainBuffer) {
+  const unknownBuffer = Buffer.from(`Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+  aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+  dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+  YnkK`, 'base64')
+
+  const randomPrefix = crypto.randomBytes(Math.floor(Math.random() * 32) + 1)
+
+  return encryptAes128Ecb(Buffer.concat([randomPrefix, plainBuffer, unknownBuffer]), RANDOM_KEY)
+}
+
+function crackOracleIII () {
+  return ""
+}
+
 module.exports = {
   decryptAes128Ecb,
   decryptAes128EcbStreamed,
@@ -337,5 +368,5 @@ module.exports = {
   detectECBorCBC,
   findOracleBlockSize,
   crackOracleII,
-  oracleFunction: oracleII
+  crackOracleIII
 }

@@ -8,7 +8,8 @@ const {
   encryptEitherECBorCBC,
   detectECBorCBC,
   findOracleBlockSize,
-  crackOracleII
+  crackOracleII,
+  crackOracleIII
 } = require('../set1/aes_utils')
 
 const {
@@ -60,7 +61,7 @@ test('Challenge 12: should find block size', () => {
   expect(findOracleBlockSize()).toBe(16)
 })
 
-test('Challenge 12: should crack ECB', () => {
+test('Challenge 12: should crack oracle II', () => {
   const expectedText = `Rollin' in my 5.0
 With my rag-top down so my hair can blow
 The girlies on standby waving just to say hi
@@ -104,4 +105,14 @@ test('Challenge 13: create a user with admin profile should work', () => {
   const encryptedEncodedParams = createAdminRole('dan@test.test')
   const decryptedUserProfile = decryptEncodedParams(encryptedEncodedParams)
   expect(decryptedUserProfile.role).toBe('admin')
+})
+
+test.skip('Challenge 14: should crack oracle III', () => {
+  const expectedText = `Rollin' in my 5.0
+With my rag-top down so my hair can blow
+The girlies on standby waving just to say hi
+Did you stop? No, I just drove by
+`
+  const cracked = crackOracleIII()
+  expect(cracked.trim()).toBe(expectedText.trim())
 })
